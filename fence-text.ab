@@ -1,12 +1,12 @@
-import { len, lpad, rpad } from "std/text"
-import { floor } from "std/math"
+import { lpad, rpad } from "std/text"
+import { math_floor } from "std/math"
 
 pub fun fence_text(lines: [Text], symbol: Text = "#", center: Bool = true): Text {
     let max_width = 0
     let fenced_text = ""
 
     // Calculate the maximum line length
-    loop line in lines {
+    for line in lines {
         let line_length = len(line)
         if line_length > max_width {
             max_width = line_length
@@ -20,10 +20,10 @@ pub fun fence_text(lines: [Text], symbol: Text = "#", center: Bool = true): Text
     fenced_text = fenced_text + border
 
     // Process each line, adding padding and centering
-    loop line in lines {
+    for line in lines {
         let line_length = len(line)
         let total_padding = max_width - line_length
-        let left_padding = center then floor(total_padding / 2) else 0
+        let left_padding = center then math_floor(total_padding / 2) else 0
         let right_padding = total_padding - left_padding
 
         // Create the padded line
