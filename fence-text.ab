@@ -1,5 +1,10 @@
-import { lpad, rpad } from "std/text"
+#!/usr/bin/env amber
+// fence-text.ab - Surround text with a rectangle constructed by a
+
+import { lpad, rpad, split_lines } from "std/text"
 import { math_floor } from "std/math"
+import { file_read, file_exists } from "std/fs"
+import { echo_error, echo_info } from "std/env"
 
 pub fun fence_text(lines: [Text], symbol: Text = "#", center: Bool = true): Text {
     let max_width = 0
@@ -38,4 +43,52 @@ pub fun fence_text(lines: [Text], symbol: Text = "#", center: Bool = true): Text
     fenced_text = fenced_text + border
 
     return fenced_text
+}
+
+main(arguments) {
+    let input_text = ""
+    let symbol = "#"
+    let center = true
+
+    // Check for custom symbol
+    if len(arguments) >= 3 {
+        symbol = arguments[2]
+    }
+
+    // Check for centering preference
+    if len(arguments) >= 4 {
+        center = arguments[3] == "true" or arguments[3] == "1" or arguments[3] == "yes"
+    }
+
+    // Handle input: either from file or stdin
+    if len(arguments) >= 2 and arguments[1] != "-" {
+        // Input from file
+        let file_path = arguments[1]
+
+        if not file_exists(file_path) {
+            echo_error("Error: File not found: {file_path}")
+            exit(1)
+        }
+
+        input_text = file_read(file_path)?
+    } else {
+        // Input from stdin
+        input_text = $ cat $?
+        echo ""
+    }
+
+    // Split the input text into lines
+    let lines = split_lines(input_text)
+
+    // Process the text and print the result
+    if len(lines) > 0 {
+        let result = fence_text(lines, symbol, center)
+        echo result
+    } else {
+        echo_info("No input text provided.")
+        echo_info("Usage: ./fence-text.ab [file_path|-] [symbol=#] [center=true|false]")
+        echo_info("  - Use '-' or no file path to read from stdin")
+        echo_info("  - Optional custom border symbol (default: #)")
+        echo_info("  - Optional centering preference (default: true)")
+    }
 }
