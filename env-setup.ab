@@ -1,0 +1,92 @@
+#!/usr/bin/env amber
+// env-setup.ab - Create .env file from .env.example with interactive prompt
+
+import { file_exists, file_read, file_write } from "std/fs"
+import { split, split_lines, trim, starts_with, text_contains } from "std/text"
+import { input_prompt, echo_info, echo_success, echo_error, echo_warning } from "std/env"
+
+main(arguments) {
+    // Default file paths
+    let env_example = ".env.example"
+    let env_output = ".env"
+    
+    // Check if custom paths are provided
+    if len(arguments) >= 2 {
+        env_example = arguments[1]
+    }
+    
+    if len(arguments) >= 3 {
+        env_output = arguments[2]
+    }
+    
+    // Check if .env.example exists
+    if not file_exists(env_example) {
+        echo_error("Error: {env_example} file not found")
+        exit(1)
+    }
+    
+    // Check if .env already exists
+    if file_exists(env_output) {
+        echo_warning("Warning: {env_output} already exists")
+        let overwrite = input_prompt("Do you want to overwrite it? (y/N): ")
+        if not (overwrite == "y" or overwrite == "Y") {
+            echo_info("Operation cancelled")
+            exit(0)
+        }
+    }
+    
+    // Read .env.example content
+    let example_content = file_read(env_example)?
+    let lines = split_lines(example_content)
+    let env_content = ""
+    
+    echo_info("Setting up your environment variables")
+    echo_info("Press Enter to keep the suggested default (if any)")
+    echo ""
+    
+    // Process each line
+    for line in lines {
+        let trimmed_line = trim(line)
+        
+        // Skip empty lines or comments
+        if trimmed_line == "" or starts_with(trimmed_line, "#") {
+            env_content += line + "\n"
+            continue
+        }
+        
+        // Check if it's a variable assignment
+        if text_contains(trimmed_line, "=") {
+            let parts = split(trimmed_line, "=")
+            let var_name = trim(parts[0])
+            let default_value = ""
+            
+            // Get default value if exists
+            if len(parts) > 1 {
+                default_value = trim(parts[1])
+            }
+            
+            // Ask for input
+            let prompt_text = "{var_name}="
+            if default_value != "" {
+                prompt_text += "[{default_value}] "
+            }
+            
+            let user_value = input_prompt(prompt_text)
+            
+            // Use default if user didn't provide input
+            if user_value == "" and default_value != "" {
+                user_value = default_value
+            }
+            
+            env_content += var_name + "=" + user_value + "\n"
+        } else {
+            // Keep other lines as is
+            env_content += line + "\n"
+        }
+    }
+    
+    // Write to .env file
+    file_write(env_output, env_content)?
+    
+    echo_success("Environment file created successfully: {env_output}")
+}
